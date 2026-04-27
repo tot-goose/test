@@ -1,0 +1,91 @@
+name: Translate README to Russian
+
+on:
+  push:
+    branches:
+      - main # Укажите вашу главную ветку (master или main)
+    paths:
+      - 'README.md' # Запускается ТОЛЬКО при изменении оригинального README
+
+permissions:
+  contents: write # Нужно, чтобы бот мог сделать commit
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install deep-translator
+
+      - name: Translate README.md
+        run: |
+          python << 'EOF'
+          import re
+          from deep_translator import GoogleTranslator
+
+          # Функция для извлечения и защиты блоков кода и ссылок
+          def protect_blocks(text):
+              placeholders = []
+              
+              # 1. Защищаем многострочные блоки кода (```)
+              text = re.sub(r'```[\s\S]*?```', 
+                            lambda m: placeholders.append(m.group(0)) or f"__PROTECTED_BLOCK_{len(placeholders)-1}__", 
+                            text)
+              
+              # 2. Защищаем инлайн-код (`)
+              text = re.sub(r'`[^`]+`', 
+                            lambda m: placeholders.append(m.group(0)) or f"__PROTECTED_BLOCK_{len(placeholders)-1}__", 
+                            text)
+              
+              # 3. Защищаем прямые ссылки ![...](...) и [...](...)
+              text = re.sub(r'(!?\[[^\]]*\]\([^)]*\))', 
+                            lambda m: placeholders.append(m.group(0)) or f"__PROTECTED_BLOCK_{len(placeholders)-1}__", 
+                            text)
+              
+              return text, placeholders
+
+          # Функция для возврата блоков на место
+          def restore_blocks(text, placeholders):
+              for i, block in enumerate(placeholders):
+                  text = text.replace(f"__PROTECTED_BLOCK_{i}__", block)
+              return text
+
+          # Чтение файла
+          with open('README.md', 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          if not content.strip():
+              print("README.md is empty, skipping.")
+              exit(0)
+
+          # Подготовка и перевод
+          protected_content, blocks = protect_blocks(content)
+          
+          # GoogleTranslator сам разбивает длинный текст на части
+          translator = GoogleTranslator(source='auto', target='ru')
+          translated_content = translator.translate(protected_content)
+
+          # Восстановление кода и ссылок
+          final_content = restore_blocks(translated_content, blocks)
+
+          # Запись файла
+          with open('README.ru.md', 'w', encoding='utf-8') as f:
+              f.write(final_content)
+              
+          print("Translation completed successfully!")
+          EOF
+
+      - name: Commit translated README
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-translate README to Russian"
+          file_pattern: "README.ru.md" # Коммитим только русский файл
