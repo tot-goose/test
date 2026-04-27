@@ -16,7 +16,7 @@ A lightweight proxy that routes Claude Code's Anthropic API calls to **NVIDIA NI
 
 [Quick Start](#quick-start) · [Providers](#providers) · [Discord Bot](#discord-bot) · [Configuration](#configuration) · [Development](#development) · [Contributing](#contributing)
 
----
+------
 
 </div>
 
