@@ -41,7 +41,7 @@ A lightweight proxy that routes Claude Code's Anthropic API calls to **NVIDIA NI
 | **Subagent Control**       | Task tool interception forces `run_in_background=False`. No runaway subagents                   |
 | **Extensible**             | Clean `BaseProvider` and `MessagingPlatform` ABCs. Add new providers or platforms easily        |
 
-## Quick Start
+## Quick Start----
 
 ### Prerequisites
 
